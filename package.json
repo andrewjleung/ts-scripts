@@ -1,1 +1,6 @@
-{ "dependencies": { "@notionhq/client": "^2.2.3", "zod": "^3.20.2" } }
+{
+  "dependencies": {
+    "@notionhq/client": "^2.2.3",
+    "zod": "^3.20.2"
+  }
+}
