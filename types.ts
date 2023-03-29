@@ -18,15 +18,19 @@ export type ApplicationStatus = typeof STATUSES[number];
 
 export type Application = {
   type: "application";
+  id: string;
   status: ApplicationStatus;
   company: string;
   role: string;
   team?: string;
+  created: Date;
 };
 
 export type Phase = {
   type: "phase";
+  parentId: string;
   status: ApplicationStatus;
+  date?: Date;
 };
 
 export type ApplicationRow = Application | Phase;

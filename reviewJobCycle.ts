@@ -6,6 +6,7 @@ import {
   ApplicationRow,
   isApplicationStatus,
   ApplicationStatus,
+  Phase,
 } from "./types";
 
 type ApplicationCycleInfo = {
@@ -14,6 +15,7 @@ type ApplicationCycleInfo = {
     | { hired: false };
   companies: string[];
   phaseCounts: Map<ApplicationStatus, number>;
+  paths: Phase[][];
   total: number;
   startDate?: Date;
   endDate?: Date;
@@ -36,6 +38,8 @@ const genericPageSchema = z.object({
 });
 
 const pageSchema = z.object({
+  id: z.string(),
+  created_time: z.string().pipe(z.coerce.date()),
   properties: z.object({
     Status: z.object({
       status: z.object({
@@ -59,6 +63,14 @@ const pageSchema = z.object({
         })
       ),
     }),
+    "Next Deadline": z.object({
+      date: z.nullable(
+        z.object({
+          start: z.string().pipe(z.coerce.date()),
+          end: z.nullable(z.string().pipe(z.coerce.date())),
+        })
+      ),
+    }),
   }),
 });
 
@@ -67,6 +79,8 @@ function parseApplicationRow(
 ): ApplicationRow | string {
   const { properties } = genericPageSchema.parse(page);
   const {
+    id,
+    created_time: created,
     properties: {
       Status: {
         status: { name: status },
@@ -74,6 +88,7 @@ function parseApplicationRow(
       Role: { select: maybeRole },
       Application: application,
       Team: { select: maybeTeam },
+      "Next Deadline": { date: maybeDate },
     },
   } = pageSchema.parse(page);
 
@@ -86,7 +101,9 @@ function parseApplicationRow(
   if (application.relation.length > 0) {
     return {
       type: "phase",
+      parentId: application.relation[0].id,
       status,
+      date: maybeDate?.end || maybeDate?.start || undefined,
     };
   }
 
@@ -114,10 +131,12 @@ function parseApplicationRow(
 
   return {
     type: "application",
+    id,
     company: maybeCompany,
     role: maybeRole.name,
     team: maybeTeam?.name ?? undefined,
     status,
+    created,
   };
 }
 
@@ -125,7 +144,10 @@ export async function reviewCycle(cycle: Cycle): Promise<ApplicationCycleInfo> {
   let hiringStatus: ApplicationCycleInfo["status"] = { hired: false };
   const companies = new Set<string>();
   const phaseCounts = new Map<ApplicationStatus, number>();
+  const paths = new Map<string, Phase[]>();
   let total = 0;
+  let startDate: Date | undefined;
+  let endDate: Date | undefined;
 
   const databaseIterator = iteratePaginatedAPI(notion.databases.query, {
     database_id: APPLICATION_DATABASE_ID,
@@ -147,6 +169,15 @@ export async function reviewCycle(cycle: Cycle): Promise<ApplicationCycleInfo> {
 
     if (result.type === "phase") {
       phaseCounts.set(result.status, (phaseCounts.get(result.status) || 0) + 1);
+      paths.set(result.parentId, [
+        ...(paths.get(result.parentId) || []),
+        result,
+      ]);
+
+      if (result.status === "Signed") {
+        endDate = result.date;
+      }
+
       continue;
     }
 
@@ -159,6 +190,10 @@ export async function reviewCycle(cycle: Cycle): Promise<ApplicationCycleInfo> {
       };
     }
 
+    startDate = startDate
+      ? new Date(Math.min(startDate.getTime(), result.created.getTime()))
+      : result.created;
+
     companies.add(result.company);
     total += 1;
   }
@@ -167,7 +202,10 @@ export async function reviewCycle(cycle: Cycle): Promise<ApplicationCycleInfo> {
     status: hiringStatus,
     companies: Array.from(companies).sort(),
     phaseCounts,
+    paths: Array.from(paths.values()),
     total,
+    startDate,
+    endDate,
   };
 }
 
