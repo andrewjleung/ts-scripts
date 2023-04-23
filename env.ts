@@ -5,12 +5,16 @@ import { z, ZodFormattedError } from "zod";
 
 export const environmentSchema = z.object({
   NOTION_TOKEN: z.string().startsWith("secret_"),
+  APPLICATION_DATABASE_ID: z.string(),
+  SUBSCRIPTION_DATABASE_ID: z.string(),
 });
 
 export type Environment = z.infer<typeof environmentSchema>;
 
 const environment: Partial<Environment> = {
   NOTION_TOKEN: process.env.NOTION_TOKEN,
+  APPLICATION_DATABASE_ID: process.env.APPLICATION_DATABASE_ID,
+  SUBSCRIPTION_DATABASE_ID: process.env.SUBSCRIPTION_DATABASE_ID,
 };
 
 const formatErrors = (errors: ZodFormattedError<Map<string, string>, string>) =>

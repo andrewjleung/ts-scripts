@@ -8,6 +8,7 @@ import {
   ApplicationStatus,
   Phase,
 } from "./types";
+import { env } from "./env";
 
 type ApplicationCycleInfo = {
   status:
@@ -20,8 +21,6 @@ type ApplicationCycleInfo = {
   startDate?: Date;
   endDate?: Date;
 };
-
-const APPLICATION_DATABASE_ID = "e56c1cbb90834c95b8e0c09964830767";
 
 const companySchema = z.object({
   title: z.array(
@@ -150,7 +149,7 @@ export async function reviewCycle(cycle: Cycle): Promise<ApplicationCycleInfo> {
   let endDate: Date | undefined;
 
   const databaseIterator = iteratePaginatedAPI(notion.databases.query, {
-    database_id: APPLICATION_DATABASE_ID,
+    database_id: env.APPLICATION_DATABASE_ID,
     filter: {
       property: "Cycle",
       select: {
