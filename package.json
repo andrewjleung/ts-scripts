@@ -1,6 +1,10 @@
 {
   "dependencies": {
     "@notionhq/client": "^2.2.3",
+    "octokit": "^3.2.0",
     "zod": "^3.20.2"
+  },
+  "devDependencies": {
+    "@types/bun": "^1.0.12"
   }
 }
