@@ -44,7 +44,7 @@ async function getLatestArtifact(): Promise<Artifact | null> {
 		.then((res) => res.artifacts);
 
 	const latestArtifact = artifacts
-		.sort((a, b) => b.created_at.getUTCSeconds() - a.created_at.getUTCSeconds())
+		.sort((a, b) => b.id - a.id) // Trusting that these are strictly increasing
 		.reverse()
 		.pop();
 
@@ -80,6 +80,10 @@ if (latestArtifact === null) {
 	console.error("No artifacts found");
 	process.exit(1);
 }
+
+console.log(
+	`Flashing artifact from ${latestArtifact.created_at.toLocaleTimeString()}`,
+);
 
 await downloadArtifact(latestArtifact.id);
 await $`unzip ${TEMP_PATH}`;
