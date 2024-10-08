@@ -1,42 +1,45 @@
-export type Cycle = "Spring 2021 (NEU Co-op 3)" | "Post Grad 2022-2023";
+export type Cycle =
+	| "Spring 2021 (NEU Co-op 3)"
+	| "Post Grad 2022-2023"
+	| "Post-PayPal 2024 Looking SEII+";
 
 const STATUSES = [
-  "Applied",
-  "OA",
-  "Phone Screen",
-  "Hiring Manager Call",
-  "Technical Interview",
-  "Verbal Offer",
-  "Formal Offer",
-  "Rejected After Interview",
-  "Rejected",
-  "Archived",
-  "Signed",
+	"Applied",
+	"OA",
+	"Phone Screen",
+	"Hiring Manager Call",
+	"Technical Interview",
+	"Verbal Offer",
+	"Formal Offer",
+	"Rejected After Interview",
+	"Rejected",
+	"Archived",
+	"Signed",
 ] as const;
 
-export type ApplicationStatus = typeof STATUSES[number];
+export type ApplicationStatus = (typeof STATUSES)[number];
 
 export type Application = {
-  type: "application";
-  id: string;
-  status: ApplicationStatus;
-  company: string;
-  role: string;
-  team?: string;
-  created: Date;
+	type: "application";
+	id: string;
+	status: ApplicationStatus;
+	company: string;
+	role: string;
+	team?: string;
+	created: Date;
 };
 
 export type Phase = {
-  type: "phase";
-  parentId: string;
-  status: ApplicationStatus;
-  date?: Date;
+	type: "phase";
+	parentId: string;
+	status: ApplicationStatus;
+	date?: Date;
 };
 
 export type ApplicationRow = Application | Phase;
 
 export function isApplicationStatus(
-  status: string
+	status: string,
 ): status is ApplicationStatus {
-  return STATUSES.includes(status as any);
+	return STATUSES.includes(status as any);
 }

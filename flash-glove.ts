@@ -64,35 +64,53 @@ async function downloadArtifact(id: number): Promise<void> {
 	await Bun.write(TEMP_PATH, res);
 }
 
-if (!(await dirExists(LEFT_GLOVE_LOCATION))) {
-	console.error("Left glove not in bootloader mass storage device mode");
-	process.exit(1);
+async function checkGlovesConnected() {
+	const errors: string[] = [];
+	const leftGloveExists = await dirExists(LEFT_GLOVE_LOCATION);
+	const rightGloveExists = await dirExists(LEFT_GLOVE_LOCATION);
+
+	if (!leftGloveExists) {
+		errors.push(
+			"Left glove not connected in bootloader mass storage device mode",
+		);
+	}
+
+	if (!rightGloveExists) {
+		errors.push(
+			"Right glove not connected in bootloader mass storage device mode",
+		);
+	}
+
+	if (errors.length > 0) {
+		console.error(errors.join("\n"));
+		process.exit(1);
+	}
 }
 
-if (!(await dirExists(RIGHT_GLOVE_LOCATION))) {
-	console.error("Right glove not in bootloader mass storage device mode");
-	process.exit(1);
+async function main() {
+	await checkGlovesConnected();
+
+	const latestArtifact = await getLatestArtifact();
+
+	if (latestArtifact === null) {
+		console.error("No artifacts found");
+		process.exit(1);
+	}
+
+	console.log(
+		`Flashing artifact from ${latestArtifact.created_at.toLocaleTimeString()}`,
+	);
+
+	await downloadArtifact(latestArtifact.id);
+	await $`unzip ${TEMP_PATH}`;
+
+	const uf2 = Bun.file(EXTRACTED_PATH);
+	await Bun.write(`${LEFT_GLOVE_LOCATION}/glove80.uf2`, uf2);
+	await Bun.write(`${RIGHT_GLOVE_LOCATION}/glove80.uf2`, uf2);
+
+	await unlink(TEMP_PATH);
+	await unlink(EXTRACTED_PATH);
 }
 
-const latestArtifact = await getLatestArtifact();
-
-if (latestArtifact === null) {
-	console.error("No artifacts found");
-	process.exit(1);
-}
-
-console.log(
-	`Flashing artifact from ${latestArtifact.created_at.toLocaleTimeString()}`,
-);
-
-await downloadArtifact(latestArtifact.id);
-await $`unzip ${TEMP_PATH}`;
-
-const uf2 = Bun.file(EXTRACTED_PATH);
-await Bun.write(`${LEFT_GLOVE_LOCATION}/glove80.uf2`, uf2);
-await Bun.write(`${RIGHT_GLOVE_LOCATION}/glove80.uf2`, uf2);
-
-await unlink(TEMP_PATH);
-await unlink(EXTRACTED_PATH);
-
+await main();
 process.exit(0);
